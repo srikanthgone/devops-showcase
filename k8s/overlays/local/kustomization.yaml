@@ -1,0 +1,59 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Minikube / local overlay.
+#
+# Differences from the cloud overlays:
+#   * Uses a locally-built image (devops-showcase:local) with
+#     imagePullPolicy: Never, so no registry is required.
+#   * References only the resources that work on a vanilla minikube (no
+#     Prometheus-Operator ServiceMonitor CRD, no Traefik IngressRoute CRD).
+#     A standard Ingress is used with the minikube "ingress" (nginx) addon.
+#   * Runs 2 replicas so you can see load-balancing, without an HPA (which
+#     would require metrics-server).
+
+namespace: devops-showcase
+
+commonLabels:
+  app.kubernetes.io/part-of: devops-showcase
+
+resources:
+  - ../../base/namespace.yaml
+  - ../../base/configmap.yaml
+  - ../../base/deployment.yaml
+  - ../../base/service.yaml
+  - ../../base/ingress.yaml
+
+images:
+  - name: ghcr.io/OWNER/devops-showcase
+    newName: devops-showcase
+    newTag: local
+
+patches:
+  - target:
+      kind: Deployment
+      name: devops-showcase
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Never
+  - target:
+      kind: ConfigMap
+      name: devops-showcase-config
+    patch: |-
+      - op: replace
+        path: /data/APP_ENV
+        value: minikube
+  - target:
+      kind: Ingress
+      name: devops-showcase
+    patch: |-
+      - op: replace
+        path: /metadata/annotations/kubernetes.io~1ingress.class
+        value: nginx
+      - op: add
+        path: /spec/ingressClassName
+        value: nginx

@@ -75,3 +75,11 @@ k8s-render: ## Render kustomize overlays
 .PHONY: k8s-deploy
 k8s-deploy: ## Apply the production overlay to the current kube-context
 	kubectl apply -k k8s/overlays/production
+
+.PHONY: minikube-up
+minikube-up: ## One-command local Kubernetes demo on minikube
+	./scripts/minikube-demo.sh
+
+.PHONY: minikube-down
+minikube-down: ## Remove the minikube demo (add ARGS=--all to delete the cluster)
+	./scripts/minikube-teardown.sh $(ARGS)

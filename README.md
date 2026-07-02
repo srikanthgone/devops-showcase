@@ -16,6 +16,8 @@ shutdown, RED-method metrics, autoscaling, and a real deploy pipeline.
 >   and what passing looks like.
 > - [`docs/PRODUCTION-READINESS.md`](docs/PRODUCTION-READINESS.md) — an
 >   auditable production-readiness checklist.
+> - [`docs/MINIKUBE.md`](docs/MINIKUBE.md) — run the app on a **real local
+>   Kubernetes** cluster (`make minikube-up`) and demo rollouts/self-healing.
 
 ---
 

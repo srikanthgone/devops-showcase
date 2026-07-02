@@ -1,0 +1,17 @@
+# Traefik IngressRoute (CRD). Requires Traefik installed with the
+# traefik.io/v1alpha1 CRDs. For a plain Ingress alternative see ingress.yaml.
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: devops-showcase
+  labels:
+    app.kubernetes.io/name: devops-showcase
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`devops-showcase.local`)
+      kind: Rule
+      services:
+        - name: devops-showcase
+          port: 80

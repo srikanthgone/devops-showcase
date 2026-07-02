@@ -1,0 +1,27 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+  external_labels:
+    stack: devops-showcase
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+scrape_configs:
+  # The demo application exposes metrics on /metrics.
+  - job_name: devops-showcase-app
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["app:8080"]
+        labels:
+          service: devops-showcase
+
+  # Traefik's own Prometheus metrics.
+  - job_name: traefik
+    static_configs:
+      - targets: ["traefik:8080"]
+
+  # Prometheus scraping itself.
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

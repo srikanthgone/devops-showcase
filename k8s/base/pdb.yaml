@@ -1,0 +1,12 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: devops-showcase
+  labels:
+    app.kubernetes.io/name: devops-showcase
+spec:
+  # Keep at least 2 pods available during voluntary disruptions (node drains).
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: devops-showcase

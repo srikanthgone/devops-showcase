@@ -1,0 +1,18 @@
+# ServiceMonitor for the Prometheus Operator (kube-prometheus-stack).
+# Requires the monitoring.coreos.com CRDs to be installed in the cluster.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: devops-showcase
+  labels:
+    app.kubernetes.io/name: devops-showcase
+    # Match the label your Prometheus Operator selects on (commonly "release").
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: devops-showcase
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

@@ -1,0 +1,94 @@
+# Full local stack that mirrors the production topology:
+#
+#   client -> Traefik (reverse proxy / ingress) -> app
+#                                     app  <- Prometheus (scrape /metrics)
+#                              Prometheus  <- Grafana (dashboards)
+#
+# Usage:
+#   docker compose up --build
+#
+# Endpoints (add the *.localhost hosts resolve automatically on most systems):
+#   http://app.localhost           -> the Go service (via Traefik)
+#   http://localhost:8090          -> Traefik dashboard
+#   http://localhost:9090          -> Prometheus
+#   http://localhost:3000          -> Grafana (admin / admin)
+name: devops-showcase
+
+services:
+  app:
+    build:
+      context: .
+      args:
+        VERSION: local
+        COMMIT: compose
+        BUILD_DATE: "2026-01-01T00:00:00Z"
+    image: devops-showcase:local
+    environment:
+      APP_ENV: docker-compose
+      LOG_LEVEL: info
+      PORT: "8080"
+    expose:
+      - "8080"
+    healthcheck:
+      # distroless has no shell; use Traefik + Prometheus for real health.
+      # This lightweight check relies on the built-in server responding.
+      test: ["CMD", "/server", "-version"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.app.rule: "Host(`app.localhost`)"
+      traefik.http.routers.app.entrypoints: "web"
+      traefik.http.services.app.loadbalancer.server.port: "8080"
+    depends_on:
+      - traefik
+    restart: unless-stopped
+
+  traefik:
+    image: traefik:v3.1
+    command:
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      # Expose Prometheus metrics on Traefik's own entrypoint (:8080 via
+      # api.insecure), scraped by Prometheus at traefik:8080/metrics.
+      - "--metrics.prometheus=true"
+      - "--metrics.prometheus.addEntryPointsLabels=true"
+      - "--metrics.prometheus.addServicesLabels=true"
+    ports:
+      - "80:80"
+      - "8090:8080" # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=6h"
+    volumes:
+      - ./deploy/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./deploy/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    restart: unless-stopped

@@ -1,0 +1,24 @@
+# Portable Ingress alternative to the Traefik IngressRoute. Works with any
+# ingress controller (Traefik, NGINX, etc). Apply either this OR
+# ingressroute.yaml, not both.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: devops-showcase
+  labels:
+    app.kubernetes.io/name: devops-showcase
+  annotations:
+    # Adjust to your ingress controller's class name.
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+    - host: devops-showcase.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: devops-showcase
+                port:
+                  number: 80

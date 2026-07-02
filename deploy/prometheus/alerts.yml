@@ -1,0 +1,38 @@
+groups:
+  - name: devops-showcase.rules
+    rules:
+      # Fire when the app stops being scrapeable.
+      - alert: AppInstanceDown
+        expr: up{job="devops-showcase-app"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "devops-showcase instance is down"
+          description: "Prometheus has not been able to scrape {{ $labels.instance }} for over 1 minute."
+
+      # Fire when the 5xx error ratio exceeds 10% over 5 minutes.
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_requests_total{status=~"5.."}[5m]))
+            /
+          sum(rate(http_requests_total[5m])) > 0.10
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High 5xx error rate"
+          description: "More than 10% of requests are returning 5xx over the last 5 minutes."
+
+      # Fire when p95 latency exceeds 750ms.
+      - alert: HighLatencyP95
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le)
+          ) > 0.75
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High p95 latency"
+          description: "p95 request latency has been above 750ms for 5 minutes."

@@ -19,11 +19,29 @@ NS="devops-showcase"
 IMAGE="devops-showcase:local"
 
 step() { printf "\n\033[1;36m==> %s\033[0m\n" "$1"; }
-need() { command -v "$1" >/dev/null 2>&1 || { echo "ERROR: '$1' is required but not installed."; exit 1; }; }
+need() {
+  command -v "$1" >/dev/null 2>&1 && return 0
+  echo "ERROR: '$1' is required but not installed."
+  case "$1" in
+    docker)   echo "  Install:  brew install --cask docker   (then launch it: open -a Docker)";;
+    minikube) echo "  Install:  brew install minikube";;
+    kubectl)  echo "  Install:  brew install kubectl";;
+  esac
+  echo "  See docs/MINIKUBE.md for the full prerequisites list."
+  exit 1
+}
 
+need docker
 need minikube
 need kubectl
-need docker
+
+# Docker must actually be running (not just installed) for the docker driver.
+if ! docker info >/dev/null 2>&1; then
+  echo "ERROR: Docker is installed but the engine is not running."
+  echo "  Start Docker Desktop:  open -a Docker"
+  echo "  Wait until 'docker version' shows a Server section, then re-run this script."
+  exit 1
+fi
 
 step "1/6 Starting minikube (docker driver)"
 minikube status >/dev/null 2>&1 || minikube start --driver=docker --cpus=2 --memory=2200

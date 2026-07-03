@@ -3,26 +3,17 @@ kind: Kustomization
 
 # Minikube / local overlay.
 #
-# Differences from the cloud overlays:
-#   * Uses a locally-built image (devops-showcase:local) with
-#     imagePullPolicy: Never, so no registry is required.
-#   * References only the resources that work on a vanilla minikube (no
-#     Prometheus-Operator ServiceMonitor CRD, no Traefik IngressRoute CRD).
-#     A standard Ingress is used with the minikube "ingress" (nginx) addon.
-#   * Runs 2 replicas so you can see load-balancing, without an HPA (which
-#     would require metrics-server).
+# It reuses the full base and then removes the two resources that require
+# extra CRDs not present on a vanilla minikube:
+#   * ServiceMonitor  (needs the Prometheus Operator)
+#   * IngressRoute    (needs the Traefik CRDs)
+# A standard Ingress (with the nginx addon) is used instead, and the image is
+# switched to the locally-built devops-showcase:local with pullPolicy Never.
 
 namespace: devops-showcase
 
-commonLabels:
-  app.kubernetes.io/part-of: devops-showcase
-
 resources:
-  - ../../base/namespace.yaml
-  - ../../base/configmap.yaml
-  - ../../base/deployment.yaml
-  - ../../base/service.yaml
-  - ../../base/ingress.yaml
+  - ../../base
 
 images:
   - name: ghcr.io/OWNER/devops-showcase
@@ -30,16 +21,15 @@ images:
     newTag: local
 
 patches:
+  # Use the image we built into minikube's Docker daemon; never try to pull.
   - target:
       kind: Deployment
       name: devops-showcase
     patch: |-
       - op: replace
-        path: /spec/replicas
-        value: 2
-      - op: replace
         path: /spec/template/spec/containers/0/imagePullPolicy
         value: Never
+  # Label the environment.
   - target:
       kind: ConfigMap
       name: devops-showcase-config
@@ -47,6 +37,7 @@ patches:
       - op: replace
         path: /data/APP_ENV
         value: minikube
+  # Route the standard Ingress through the minikube nginx ingress controller.
   - target:
       kind: Ingress
       name: devops-showcase
@@ -57,3 +48,17 @@ patches:
       - op: add
         path: /spec/ingressClassName
         value: nginx
+  # Remove the Prometheus-Operator ServiceMonitor (no CRD on vanilla minikube).
+  - patch: |-
+      apiVersion: monitoring.coreos.com/v1
+      kind: ServiceMonitor
+      metadata:
+        name: devops-showcase
+      $patch: delete
+  # Remove the Traefik IngressRoute (no Traefik CRDs on vanilla minikube).
+  - patch: |-
+      apiVersion: traefik.io/v1alpha1
+      kind: IngressRoute
+      metadata:
+        name: devops-showcase
+      $patch: delete

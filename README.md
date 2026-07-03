@@ -18,6 +18,8 @@ shutdown, RED-method metrics, autoscaling, and a real deploy pipeline.
 >   auditable production-readiness checklist.
 > - [`docs/MINIKUBE.md`](docs/MINIKUBE.md) — run the app on a **real local
 >   Kubernetes** cluster (`make minikube-up`) and demo rollouts/self-healing.
+> - [`docs/LEARNING-PATH.md`](docs/LEARNING-PATH.md) — **new to these tools?**
+>   A guided, phase-by-phase curriculum using this repo as your lab.
 
 ---
 

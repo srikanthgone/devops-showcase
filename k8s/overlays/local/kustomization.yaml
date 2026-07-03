@@ -49,16 +49,24 @@ patches:
         path: /spec/ingressClassName
         value: nginx
   # Remove the Prometheus-Operator ServiceMonitor (no CRD on vanilla minikube).
-  - patch: |-
+  - target:
+      group: monitoring.coreos.com
+      kind: ServiceMonitor
+      name: devops-showcase
+    patch: |-
+      $patch: delete
       apiVersion: monitoring.coreos.com/v1
       kind: ServiceMonitor
       metadata:
         name: devops-showcase
-      $patch: delete
   # Remove the Traefik IngressRoute (no Traefik CRDs on vanilla minikube).
-  - patch: |-
+  - target:
+      group: traefik.io
+      kind: IngressRoute
+      name: devops-showcase
+    patch: |-
+      $patch: delete
       apiVersion: traefik.io/v1alpha1
       kind: IngressRoute
       metadata:
         name: devops-showcase
-      $patch: delete
